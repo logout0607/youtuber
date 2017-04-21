@@ -1,0 +1,140 @@
+group 'com.todaywork'
+version '1.0'
+
+buildscript {
+    ext {
+        springBootVersion = '1.4.1.RELEASE'
+        hibernateVersion = '5.1.0.Final'
+        springSocialSecurityVersion = '1.1.4.RELEASE'
+        springSessionVersion = '1.2.1.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "http://repo.spring.io/snapshot" }
+        maven { url 'http://repo.spring.io/libs-milestone' }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+allprojects {
+    apply plugin: 'spring-boot'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "http://repo.spring.io/snapshot" }
+        maven {
+            url 'http://repo.spring.io/libs-milestone'
+        }
+    }
+}
+
+
+List springSocial = ['org.springframework.social:spring-social-security:1.1.4.RELEASE', 'org.springframework.social:spring-social-config:1.1.4.RELEASE']
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'idea'
+
+    dependencies {
+        compile("org.springframework.boot:spring-boot-starter-aop:${springBootVersion}")
+        compile("org.springframework.boot:spring-boot-starter-web:${springBootVersion}")
+
+        compile("org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}")
+
+        compile("org.hibernate:hibernate-core:${hibernateVersion}")
+        compile("org.hibernate:hibernate-java8:${hibernateVersion}")
+        compile("org.hibernate:hibernate-entitymanager:${hibernateVersion}")
+
+        compile("org.springframework.boot:spring-boot-starter-logging:${springBootVersion}")
+
+        compile("org.modelmapper:modelmapper:0.7.7")
+        compile("joda-time:joda-time:2.9.4")
+        compile("com.fasterxml.jackson.datatype:jackson-datatype-joda:2.4.2");
+        compile("org.jadira.usertype:usertype.extended:5.0.0.GA")
+
+        testCompile("org.springframework.boot:spring-boot-starter-test:${springBootVersion}")
+        testCompile("junit:junit:4.12")
+
+    }
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+}
+
+project(':entity') {
+    dependencies {
+        compile("org.projectlombok:lombok:1.16.8")
+    }
+}
+
+project(':config') {
+    dependencies {
+        compile project(':entity')
+        compile("org.springframework.boot:spring-boot-starter-data-redis:${springBootVersion}")
+        compile("org.springframework.session:spring-session:${springSessionVersion}")
+        compile("org.springframework.boot:spring-boot-starter-security:${springBootVersion}")
+    }
+}
+
+project(':security') {
+    apply plugin: 'war'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    dependencies {
+        compile project(':config'), project(':cmm-logic')
+        compile springSocial
+        compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.3'
+        compile 'com.h2database:h2:1.4.192'
+    }
+
+    war.doLast{
+        explodedWar.execute()
+    }
+    task explodedWar(type : Copy){
+        into "$buildDir/exploded"
+        with war
+    }
+
+    war.dependsOn explodedWar
+}
+
+
+project(':api') {
+    apply plugin: 'war'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    dependencies {
+        compile project(':config'), project(':cmm-logic')
+        compile springSocial
+        compile 'com.h2database:h2:1.4.192'
+        compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.3'
+        compile group: 'com.googlecode.mp4parser', name: 'isoparser', version: '1.1.20'
+        compile group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.11.14'
+    }
+
+    war.doLast{
+        explodedWar.execute()
+    }
+    task explodedWar(type : Copy){
+        into "$buildDir/exploded"
+        with war
+    }
+
+    war.dependsOn explodedWar
+}
+
